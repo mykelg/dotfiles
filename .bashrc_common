@@ -1,0 +1,75 @@
+GIT_EDITOR=vi
+export GIT_EDITOR
+
+PS1="\n\[\033[01;34m\][\w]\[\033[00m\]\n\$ "
+export PS1
+
+alias echodate='echo `date "+%Y%m%d-%H%M%S"`.log'
+alias reboot='reboot --help'
+
+export PATH="$HOME/.cargo/bin:$PATH"
+
+HISTTIMEFORMAT='%Y-%m-%d %T '
+
+msg() {
+  if [ "${IS_VERBOSE}" = "true" ]; then
+    echo "$@"
+  fi
+}
+
+err() {
+  echo "$@" >&2
+}
+
+strlen() {
+  str_="$1"
+  echo ${#str_}
+}
+
+question() {
+  echo -n "$1"
+  read ANSWER
+  case "$ANSWER" in
+    y | yes ) return 0 ;;
+    *       ) return 1 ;;
+  esac
+}
+
+process_killer() {
+  ps aux | grep "$1" | grep -v grep
+
+  question "Would you like to kill these process [y/n]?  "
+  if [ $? -eq 0 ]; then
+    ps aux | grep "$1" | grep -v grep | awk '{ print $2 }' | xargs kill -9
+  fi
+}
+if [[ -x `which colordiff` ]]; then
+  alias diff='colordiff -u'
+else
+  alias diff='diff -u'
+fi
+
+
+function __show_status() {
+  local status=$(echo ${PIPESTATUS[@]})
+  local SETCOLOR_SUCCESS="echo -en \\033[1;32m"
+  local SETCOLOR_FAILURE="echo -en \\033[1;31m"
+  local SETCOLOR_WARNING="echo -en \\033[1;33m"
+  local SETCOLOR_NORMAL="echo -en \\033[0;39m"
+
+  local SETCOLOR s
+  for s in ${status}
+  do
+    if [ ${s} -gt 100 ]; then
+      SETCOLOR=${SETCOLOR_FAILURE}
+    elif [ ${s} -gt 0 ]; then
+      SETCOLOR=${SETCOLOR_WARNING}
+    else
+      SETCOLOR=${SETCOLOR_SUCCESS}
+    fi
+  done
+  ${SETCOLOR}
+  echo "(process return value->${status// /|})"
+  ${SETCOLOR_NORMAL}
+}
+PROMPT_COMMAND='__show_status;'${PROMPT_COMMAND//__show_status;/}
